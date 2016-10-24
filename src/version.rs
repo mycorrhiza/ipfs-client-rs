@@ -40,9 +40,9 @@ fn version_request(base: &str, buffer: Buffer) -> Result<Easy> {
 fn parse_version(buffer: &[u8]) -> Result<Version> {
     let mut map: Map<String, String> = try!(serde_json::from_slice(buffer));
     Ok(Version {
-        version: try!(map.remove("version").ok_or("Missing version")),
-        commit: try!(map.remove("commit").ok_or("Missing commit")),
-        repo: try!(map.remove("repo").ok_or("Missing repo")),
+        version: try!(map.remove("Version").ok_or("Missing version")),
+        commit: try!(map.remove("Commit").ok_or("Missing commit")),
+        repo: try!(map.remove("Repo").ok_or("Missing repo")),
     })
 }
 
