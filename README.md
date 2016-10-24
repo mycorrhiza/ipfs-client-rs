@@ -2,9 +2,6 @@
 
 A tokio based client for the IPFS daemon's HTTP api.
 
-Currently seems to hit some internal error in tokio-curl interacting with IPFS's
-go-lang daemon (at least on my machine).
-
 ## License
 
 Licensed under either of
