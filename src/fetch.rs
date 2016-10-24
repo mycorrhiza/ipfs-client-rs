@@ -1,4 +1,4 @@
-use std::sync::{ Arc, Weak, Mutex };
+use std::sync::{ Arc, Mutex };
 
 use curl::easy::Easy;
 use futures::{ self, Future, AndThen, Done, Map, Join, Flatten, MapErr, Finished };
@@ -30,22 +30,11 @@ impl Fetcher {
         // We actually only access the buffer one place at a time, first in the
         // `write_function` callback while the transfer is going on, then in
         // `finish_fetch` once the transfer has finished.
-        //
-        // The callback needs to use a Weak instead of a clone of the Arc as
-        // the Easy instance keeps the callback even after the transfer has
-        // completed, if the callback had a clone of the Arc then this would
-        // block unwrapping it to take exclusive ownership of the buffer in
-        // `finish_fetch`.
-        //
-        // (It should be possible to use an Arc here and simply drop the Easy
-        // instance in `finish_fetch` before unwrapping it, for some reason
-        // that doesn't work though, potential leak in curl-rs?)
-        fn start_fetch(url: &str, buffer: Weak<Mutex<Vec<u8>>>) -> Result<Easy> {
+        fn start_fetch(url: &str, buffer: Arc<Mutex<Vec<u8>>>) -> Result<Easy> {
             let mut req = Easy::new();
             try!(req.get(true));
             try!(req.url(url));
             try!(req.write_function(move |data| {
-                let buffer = buffer.upgrade().expect("The Arc should be alive till the transfer is finished");
                 let mut buffer = buffer.lock().expect("We're the only thread accessing this mutex now, so we shouldn't be able to poison it");
                 buffer.extend_from_slice(data);
                 Ok(data.len())
@@ -53,7 +42,11 @@ impl Fetcher {
             Ok(req)
         }
 
-        fn finish_fetch((_, buffer): (Easy, Arc<Mutex<Vec<u8>>>)) -> Vec<u8> {
+        fn finish_fetch((easy, buffer): (Easy, Arc<Mutex<Vec<u8>>>)) -> Vec<u8> {
+            drop(easy);
+            // Dropping the Easy instance here will drop the `write_function`
+            // callback above containing the only other strong reference to the
+            // buffer, allowing this try_unwrap to succeed.
             Arc::try_unwrap(buffer)
                 .expect("We should be the only strong reference to the data")
                 .into_inner()
@@ -63,7 +56,7 @@ impl Fetcher {
         let buffer = Arc::new(Mutex::new(Vec::with_capacity(128)));
         FetchFuture(
             futures::done(
-                start_fetch(url, Arc::downgrade(&buffer))
+                start_fetch(url, buffer.clone())
                     .map(|req| self.session.perform(req).map_err(Error::from as _)))
             .flatten()
             .join(futures::finished(buffer))
