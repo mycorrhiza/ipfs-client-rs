@@ -22,6 +22,6 @@ mod wrap;
 mod fetch;
 
 pub mod client;
-pub mod version;
+pub mod data;
 
 pub use client::Client;

@@ -4,7 +4,7 @@ use tokio_core::reactor::Handle;
 use tokio_curl::Session;
 use fetch::Fetcher;
 
-use version::VersionFuture;
+use data::future;
 
 pub struct Client {
     fetcher: Fetcher,
@@ -19,7 +19,8 @@ impl Client {
         }
     }
 
-    pub fn version(&self) -> VersionFuture {
-        VersionFuture::new(&self.fetcher, &self.base)
+    pub fn version(&self) -> future::Version {
+        let url = self.base.to_owned() + "version";
+        future::Version(self.fetcher.fetch(&url).parse_json())
     }
 }
