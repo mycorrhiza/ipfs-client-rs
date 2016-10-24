@@ -4,11 +4,9 @@ version = "0.1.0"
 authors = ["Wim Looman <wim@nemo157.com>"]
 
 [dependencies]
-curl = "*"
-error-chain = "*"
-futures = "*"
-serde_json = "*"
-tokio-core = "*"
-# Bug with zero-length timeouts fixed in master (triggered by delay with Little
-# Snitch allowing the network connection)
-tokio-curl = { git = "https://github.com/tokio-rs/tokio-curl" }
+curl = "0.3.8"
+error-chain = "0.5.0"
+futures = "0.1.2"
+serde_json = "0.8.3"
+tokio-core = "0.1.0"
+tokio-curl = "0.1.3"
