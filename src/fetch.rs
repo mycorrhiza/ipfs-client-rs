@@ -12,9 +12,9 @@ pub struct Fetcher {
     session: Session,
 }
 
-wrapped_future!(FetchFuture(Map<Join<Flatten<Done<MapErr<Perform,fn(PerformError) -> Error>,Error>>,Finished<Arc<Mutex<Vec<u8>>>, Error>>,fn((Easy, Arc<Mutex<Vec<u8>>>)) -> Vec<u8> >));
+wrapped_future!(Vec<u8>, FetchFuture(Map<Join<Flatten<Done<MapErr<Perform,fn(PerformError) -> Error>,Error>>,Finished<Arc<Mutex<Vec<u8>>>, Error>>,fn((Easy, Arc<Mutex<Vec<u8>>>)) -> Vec<u8> >));
 
-wrapped_future!(FetchJsonFuture<T: Deserialize>(AndThen<FetchFuture, Result<T>, fn(Vec<u8>) -> Result<T>>));
+wrapped_future!(T, FetchJsonFuture<T: Deserialize>(AndThen<FetchFuture, Result<T>, fn(Vec<u8>) -> Result<T>>));
 
 fn start_fetch(url: &str, buffer: Weak<Mutex<Vec<u8>>>) -> Result<Easy> {
     let mut req = Easy::new();

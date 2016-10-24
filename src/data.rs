@@ -15,7 +15,7 @@ pub mod future {
 
     macro_rules! future {
         ($t:ident) => {
-            wrapped_future!($t(FetchJsonFuture<super::$t>));
+            wrapped_future!(super::$t, $t(FetchJsonFuture<super::$t>));
         };
     }
 
