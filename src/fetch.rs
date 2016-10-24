@@ -1,27 +1,20 @@
-use std::mem;
 use std::sync::{ Arc, Weak, Mutex };
-use std::marker::PhantomData;
 
 use curl::easy::Easy;
-use futures::{ Future, Async, Poll };
+use futures::{ self, Future, AndThen, Done, Map, Join, Flatten, MapErr, Finished };
 use serde::Deserialize;
 use serde_json::{ self };
-use tokio_curl::{ Perform, Session };
+use tokio_curl::{ Perform, Session, PerformError };
 
 use errors::*;
-
-enum State {
-    Performing(Arc<Mutex<Vec<u8>>>, Perform),
-    Errored(Error),
-    Empty,
-}
 
 pub struct Fetcher {
     session: Session,
 }
 
-pub struct FetchFuture(State);
-pub struct FetchJsonFuture<T: Deserialize>(FetchFuture, PhantomData<T>);
+wrapped_future!(FetchFuture(Map<Join<Flatten<Done<MapErr<Perform,fn(PerformError) -> Error>,Error>>,Finished<Arc<Mutex<Vec<u8>>>, Error>>,fn((Easy, Arc<Mutex<Vec<u8>>>)) -> Vec<u8> >));
+
+wrapped_future!(FetchJsonFuture<T: Deserialize>(AndThen<FetchFuture, Result<T>, fn(Vec<u8>) -> Result<T>>));
 
 fn start_fetch(url: &str, buffer: Weak<Mutex<Vec<u8>>>) -> Result<Easy> {
     let mut req = Easy::new();
@@ -48,58 +41,30 @@ impl Fetcher {
     }
 }
 
+fn json_from_vec<T: Deserialize>(vec: Vec<u8>) -> Result<T> {
+    serde_json::from_slice(&vec).map_err(Error::from)
+}
+
+fn finish_fetch((_, buffer): (Easy, Arc<Mutex<Vec<u8>>>)) -> Vec<u8> {
+    Arc::try_unwrap(buffer)
+        .expect("We should be the only strong reference to the data")
+        .into_inner()
+        .expect("If the transferring thread panicked we should not have made it here in the first place")
+}
+
 impl FetchFuture {
     fn new(session: &Session, url: &str) -> FetchFuture {
         let buffer = Arc::new(Mutex::new(Vec::with_capacity(128)));
-        match start_fetch(url, Arc::downgrade(&buffer)) {
-            Ok(req) => FetchFuture(State::Performing(buffer, session.perform(req))),
-            Err(err) => FetchFuture(State::Errored(err)),
-        }
+        FetchFuture(
+            futures::done(
+                start_fetch(url, Arc::downgrade(&buffer))
+                    .map(|req| session.perform(req).map_err(Error::from as _)))
+            .flatten()
+            .join(futures::finished(buffer))
+            .map(finish_fetch))
     }
 
     pub fn parse_json<T: Deserialize>(self) -> FetchJsonFuture<T> {
-        FetchJsonFuture(self, PhantomData)
-    }
-}
-
-impl Future for FetchFuture {
-    type Item = Vec<u8>;
-    type Error = Error;
-
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        match mem::replace(&mut self.0, State::Empty) {
-            State::Performing(buffer, mut perform) => {
-                Ok(match try!(perform.poll()) {
-                    Async::Ready(_) => {
-                        let buffer = Arc::try_unwrap(buffer).expect("We should be the only strong reference to the data");
-                        let buffer = buffer.into_inner().expect("If the transferring thread panicked we should not have made it here in the first place");
-                        Async::Ready(buffer)
-                    }
-                    Async::NotReady => {
-                        self.0 = State::Performing(buffer, perform);
-                        Async::NotReady
-                    }
-                })
-            },
-            State::Errored(error) => Err(error),
-            State::Empty => panic!("poll a FetchFuture after it's done"),
-        }
-    }
-}
-
-impl<T: Deserialize> Future for FetchJsonFuture<T> {
-    type Item = T;
-    type Error = Error;
-
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        match self.0.poll() {
-            Ok(Async::Ready(buffer)) => {
-                serde_json::from_slice(&*buffer).map_err(Error::from).map(Async::Ready)
-            }
-            Ok(Async::NotReady) => {
-                Ok(Async::NotReady)
-            }
-            Err(error) => Err(error),
-        }
+        FetchJsonFuture(self.and_then(json_from_vec))
     }
 }

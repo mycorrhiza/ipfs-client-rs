@@ -15,6 +15,10 @@ extern crate tokio_core;
 extern crate tokio_curl;
 
 mod errors;
+
+#[macro_use]
+mod wrap;
+
 mod fetch;
 
 pub mod client;
