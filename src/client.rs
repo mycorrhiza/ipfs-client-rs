@@ -23,4 +23,14 @@ impl Client {
         let url = self.base.to_owned() + "version";
         self.fetcher.fetch(&url).parse_json().into()
     }
+
+    pub fn host_info(&self) -> future::PeerInfo {
+        let url = self.base.to_owned() + "id";
+        self.fetcher.fetch(&url).parse_json().into()
+    }
+
+    pub fn peer_info<S: AsRef<str>>(&self, peer: S) -> future::PeerInfo {
+        let url = self.base.to_owned() + "id/" + peer.as_ref();
+        self.fetcher.fetch(&url).parse_json().into()
+    }
 }
