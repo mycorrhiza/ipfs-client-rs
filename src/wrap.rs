@@ -11,6 +11,12 @@ macro_rules! wrapped_future {
                 self.0.poll()
             }
         }
+
+        impl<T: Into<$wrappee>> From<T> for $wrapper {
+            fn from(f: T) -> $wrapper {
+                $wrapper(f.into())
+            }
+        }
     };
 
     ($item:ty, $wrapper:ident<$($t:ident:$tt:tt),+>($wrappee:ty)) => {

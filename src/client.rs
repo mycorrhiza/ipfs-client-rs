@@ -21,6 +21,6 @@ impl Client {
 
     pub fn version(&self) -> future::Version {
         let url = self.base.to_owned() + "version";
-        future::Version(self.fetcher.fetch(&url).parse_json())
+        self.fetcher.fetch(&url).parse_json().into()
     }
 }
