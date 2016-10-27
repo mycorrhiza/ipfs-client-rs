@@ -1,36 +1,32 @@
-use std::borrow::Cow;
-
 use tokio_core::reactor::Handle;
 use tokio_curl::Session;
 use fetch::Fetcher;
+use multiaddr::MultiAddr;
 
 use data::future;
 
 pub struct Client {
     fetcher: Fetcher,
-    base: Cow<'static, str>,
+    host: MultiAddr,
 }
 
 impl Client {
-    pub fn new<S: Into<Cow<'static, str>>>(handle: Handle, base: S) -> Client {
+    pub fn new(handle: Handle, host: MultiAddr) -> Client {
         Client {
             fetcher: Fetcher::new(Session::new(handle)),
-            base: base.into(),
+            host: host,
         }
     }
 
     pub fn version(&self) -> future::Version {
-        let url = self.base.to_owned() + "version";
-        self.fetcher.fetch(&url).parse_json().into()
+        self.fetcher.fetch(&self.host, ("api", "v0", "version")).parse_json().into()
     }
 
     pub fn host_info(&self) -> future::PeerInfo {
-        let url = self.base.to_owned() + "id";
-        self.fetcher.fetch(&url).parse_json().into()
+        self.fetcher.fetch(&self.host, ("api", "v0", "id")).parse_json().into()
     }
 
     pub fn peer_info<S: AsRef<str>>(&self, peer: S) -> future::PeerInfo {
-        let url = self.base.to_owned() + "id/" + peer.as_ref();
-        self.fetcher.fetch(&url).parse_json().into()
+        self.fetcher.fetch(&self.host, ("api", "v0", "id", peer)).parse_json().into()
     }
 }
