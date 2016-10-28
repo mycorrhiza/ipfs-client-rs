@@ -3,12 +3,14 @@ use tokio_curl::Session;
 use fetch::Fetcher;
 use multiaddr::MultiAddr;
 
-use data::future;
+use future;
 
 pub struct Client {
     fetcher: Fetcher,
     host: MultiAddr,
 }
+
+pub struct SwarmClient<'a>(&'a Client);
 
 impl Client {
     pub fn new(handle: Handle, host: MultiAddr) -> Client {
@@ -28,5 +30,15 @@ impl Client {
 
     pub fn peer_info<S: AsRef<str>>(&self, peer: S) -> future::PeerInfo {
         self.fetcher.fetch(&self.host, ("api", "v0", "id", peer)).parse_json().into()
+    }
+
+    pub fn swarm(&self) -> SwarmClient {
+        SwarmClient(self)
+    }
+}
+
+impl<'a> SwarmClient<'a> {
+    pub fn peers(&self) -> future::swarm::Peers {
+        self.0.fetcher.fetch(&self.0.host, ("api", "v0", "swarm", "peers")).parse_json().into()
     }
 }

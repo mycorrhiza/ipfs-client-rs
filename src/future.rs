@@ -1,10 +1,12 @@
-use fetch::FetchJsonFuture;
-use data;
-
-macro_rules! data_future {
-    ($t:ident) => {
-        wrapped_future!($t(FetchJsonFuture<data::$t>));
+macro_rules! future {
+    ($p:path, $t:ident) => {
+        wrapped_future!($p, $t(::fetch::FetchJsonFuture<$p>));
     };
 }
 
-data_future!(Version);
+future!(::data::PeerInfo, PeerInfo);
+future!(::data::Version, Version);
+
+pub mod swarm {
+    future!(::data::swarm::Peers, Peers);
+}

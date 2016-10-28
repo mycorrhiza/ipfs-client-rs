@@ -28,15 +28,10 @@ pub struct Version {
     pub repo: String,
 }
 
-pub mod future {
-    use fetch::FetchJsonFuture;
-
-    macro_rules! future {
-        ($t:ident) => {
-            wrapped_future!(super::$t, $t(FetchJsonFuture<super::$t>));
-        };
+pub mod swarm {
+    #[derive(Debug, Deserialize)]
+    pub struct Peers {
+        #[serde(rename = "Strings")]
+        pub addresses: Vec<String>,
     }
-
-    future!(PeerInfo);
-    future!(Version);
 }

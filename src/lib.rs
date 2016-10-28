@@ -25,5 +25,6 @@ mod fetch;
 
 pub mod client;
 pub mod data;
+pub mod future;
 
 pub use client::Client;
