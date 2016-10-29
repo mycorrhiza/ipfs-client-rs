@@ -1,9 +1,6 @@
-use std::error::Error as StdError;
-use std::str::FromStr;
-
-use serde;
-use serde::de::{ self, Deserializer };
 use multiaddr::MultiAddr;
+
+use deserialize_helpers::vec_from_strs;
 
 #[derive(Debug, Deserialize)]
 pub struct PeerInfo {
@@ -14,7 +11,7 @@ pub struct PeerInfo {
     pub public_key: String,
 
     #[serde(rename = "Addresses")]
-    #[serde(deserialize_with = "from_strs")]
+    #[serde(deserialize_with = "vec_from_strs")]
     pub addresses: Vec<MultiAddr>,
 
     #[serde(rename = "AgentVersion")]
@@ -37,44 +34,23 @@ pub struct Version {
 }
 
 pub mod swarm {
+    use std::collections::HashMap;
+
     use multiaddr::MultiAddr;
-    use super::from_strs;
+
+    use deserialize_helpers::{ vec_from_strs, map_of_vec_from_strs };
 
     #[derive(Debug, Deserialize)]
-    pub struct Peers {
+    pub struct Addresses {
         #[serde(rename = "Strings")]
-        #[serde(deserialize_with = "from_strs")]
+        #[serde(deserialize_with = "vec_from_strs")]
         pub addresses: Vec<MultiAddr>,
     }
-}
 
-fn from_strs<T, D>(d: &mut D) -> Result<Vec<T>, D::Error>
-    where T: FromStr,
-          <T as FromStr>::Err: StdError,
-          D: Deserializer
-{
-    let strs = try!(d.deserialize_seq(de::impls::VecVisitor::<String>::new()));
-    let mut result = Vec::with_capacity(strs.len());
-    for s in strs {
-        result.push(try!(s.parse().map_err(|e| <D::Error as serde::Error>::custom(<<T as FromStr>::Err as StdError>::description(&e)))));
+    #[derive(Debug, Deserialize)]
+    pub struct PeerAddresses {
+        #[serde(rename = "Addrs")]
+        #[serde(deserialize_with = "map_of_vec_from_strs")]
+        pub peers: HashMap<String, Vec<MultiAddr>>,
     }
-    Ok(result)
 }
-
-// fn from_str<T, D>(d: &mut D) -> Result<T, D::Error>
-//     where T: FromStr,
-//           <T as FromStr>::Err: StdError,
-//           D: Deserializer
-// {
-//     struct Visitor;
-// 
-//     impl de::Visitor for Visitor {
-//         type Value = String;
-// 
-//         fn visit_str<E: de::Error>(&mut self, value: &str) -> Result<String, E> {
-//             Ok(value.to_owned())
-//         }
-//     }
-// 
-//     Ok(try!(try!(d.deserialize_str(Visitor)).parse().map_err(|e| <D::Error as serde::Error>::custom(<<T as FromStr>::Err as StdError>::description(&e)))))
-// }

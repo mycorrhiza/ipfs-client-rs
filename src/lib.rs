@@ -21,6 +21,7 @@ mod errors;
 #[macro_use]
 mod wrap;
 
+mod deserialize_helpers;
 mod fetch;
 
 pub mod client;

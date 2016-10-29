@@ -30,15 +30,56 @@ impl<'a> From<&'a str> for Path {
     }
 }
 
-impl<A, B, C> From<(A, B, C)> for Path where A: AsRef<str>, B: AsRef<str>, C: AsRef<str> {
-    fn from((a, b, c): (A, B, C)) -> Path {
-        Path([a.as_ref(), b.as_ref(), c.as_ref()].join("/"))
+macro_rules! path_from {
+    ($($a:ident : $t:ident),+) => {
+        impl<$($t),+> From<($($t),+,)> for Path where $($t: AsRef<str>),+ {
+            fn from(($($a),+,): ($($t),+,)) -> Path {
+                Path([$($a.as_ref()),+].join("/"))
+            }
+        }
     }
 }
 
-impl<A, B, C, D> From<(A, B, C, D)> for Path where A: AsRef<str>, B: AsRef<str>, C: AsRef<str>, D: AsRef<str> {
-    fn from((a, b, c, d): (A, B, C, D)) -> Path {
-        Path([a.as_ref(), b.as_ref(), c.as_ref(), d.as_ref()].join("/"))
+path_from!(a: A, b: B, c: C);
+path_from!(a: A, b: B, c: C, d: D);
+path_from!(a: A, b: B, c: C, d: D, e: E);
+
+pub struct Param(Option<String>);
+pub struct Params(Option<String>);
+
+impl Params {
+    fn to_string(self) -> String {
+        match self.0 {
+            Some(mut s) => {
+                s.insert(0, '?');
+                s
+            }
+            None => "".to_owned()
+        }
+    }
+}
+
+impl<A> From<(A, bool)> for Param where A: Into<String> {
+    fn from((a, b): (A, bool)) -> Param {
+        Param(if b { Some(a.into()) } else { None })
+    }
+}
+
+impl From<()> for Params {
+    fn from(_: ()) -> Params {
+        Params(None)
+    }
+}
+
+impl<A> From<A> for Params where A: Into<Param> {
+    fn from(a: A) -> Params {
+        Params(a.into().0)
+    }
+}
+
+impl<A> From<(A,)> for Params where A: Into<Param> {
+    fn from((a,): (A,)) -> Params {
+        Params(a.into().0)
     }
 }
 
@@ -49,8 +90,8 @@ impl Fetcher {
         }
     }
 
-    pub fn fetch<P: Into<Path>>(&self, host: &MultiAddr, path: P) -> FetchFuture {
-        fn construct_url(host: &MultiAddr, path: Path) -> Result<String> {
+    pub fn fetch<P: Into<Path>, A: Into<Params>>(&self, host: &MultiAddr, path: P, params: A) -> FetchFuture {
+        fn construct_url(host: &MultiAddr, path: Path, params: Params) -> Result<String> {
             let base = match host.segments() {
                 &[Segment::IP4(ref addr), Segment::Tcp(port), Segment::Http] =>
                     format!("http://{}:{}/", addr, port),
@@ -64,7 +105,7 @@ impl Fetcher {
                     return Err(Error::from(format!("Cannot fetch from host {}", host)));
                 }
             };
-            Ok(base + &path.0)
+            Ok(base + &path.0 + &*params.to_string())
         }
 
         // We have to use an Arc<Mutex<_>> here because of limitations in the
@@ -74,10 +115,10 @@ impl Fetcher {
         // We actually only access the buffer one place at a time, first in the
         // `write_function` callback while the transfer is going on, then in
         // `finish_fetch` once the transfer has finished.
-        fn start_fetch(host: &MultiAddr, path: Path, buffer: Arc<Mutex<Vec<u8>>>) -> Result<Easy> {
+        fn start_fetch(host: &MultiAddr, path: Path, params: Params, buffer: Arc<Mutex<Vec<u8>>>) -> Result<Easy> {
             let mut req = Easy::new();
             try!(req.get(true));
-            try!(req.url(&try!(construct_url(host, path))));
+            try!(req.url(&try!(construct_url(host, path, params))));
             try!(req.write_function(move |data| {
                 let mut buffer = buffer.lock().expect("We're the only thread accessing this mutex now, so we shouldn't be able to poison it");
                 buffer.extend_from_slice(data);
@@ -100,7 +141,7 @@ impl Fetcher {
         let buffer = Arc::new(Mutex::new(Vec::with_capacity(128)));
         FetchFuture(
             futures::done(
-                start_fetch(host, path.into(), buffer.clone())
+                start_fetch(host, path.into(), params.into(), buffer.clone())
                     .map(|req| self.session.perform(req).map_err(Error::from as _)))
             .flatten()
             .join(futures::finished(buffer))

@@ -8,5 +8,6 @@ future!(::data::PeerInfo, PeerInfo);
 future!(::data::Version, Version);
 
 pub mod swarm {
-    future!(::data::swarm::Peers, Peers);
+    future!(::data::swarm::Addresses, Addresses);
+    future!(::data::swarm::PeerAddresses, PeerAddresses);
 }

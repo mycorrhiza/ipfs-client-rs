@@ -21,15 +21,15 @@ impl Client {
     }
 
     pub fn version(&self) -> future::Version {
-        self.fetcher.fetch(&self.host, ("api", "v0", "version")).parse_json().into()
+        self.fetcher.fetch(&self.host, ("api", "v0", "version"), ()).parse_json().into()
     }
 
-    pub fn host_info(&self) -> future::PeerInfo {
-        self.fetcher.fetch(&self.host, ("api", "v0", "id")).parse_json().into()
+    pub fn local_info(&self) -> future::PeerInfo {
+        self.fetcher.fetch(&self.host, ("api", "v0", "id"), ()).parse_json().into()
     }
 
     pub fn peer_info<S: AsRef<str>>(&self, peer: S) -> future::PeerInfo {
-        self.fetcher.fetch(&self.host, ("api", "v0", "id", peer)).parse_json().into()
+        self.fetcher.fetch(&self.host, ("api", "v0", "id", peer), ()).parse_json().into()
     }
 
     pub fn swarm(&self) -> SwarmClient {
@@ -38,7 +38,15 @@ impl Client {
 }
 
 impl<'a> SwarmClient<'a> {
-    pub fn peers(&self) -> future::swarm::Peers {
-        self.0.fetcher.fetch(&self.0.host, ("api", "v0", "swarm", "peers")).parse_json().into()
+    pub fn peers(&self) -> future::swarm::Addresses {
+        self.0.fetcher.fetch(&self.0.host, ("api", "v0", "swarm", "peers"), ()).parse_json().into()
+    }
+
+    pub fn addresses(&self) -> future::swarm::PeerAddresses {
+        self.0.fetcher.fetch(&self.0.host, ("api", "v0", "swarm", "addrs"), ()).parse_json().into()
+    }
+
+    pub fn local_addresses(&self, id: bool) -> future::swarm::Addresses {
+        self.0.fetcher.fetch(&self.0.host, ("api", "v0", "swarm", "addrs", "local"), (("id", id))).parse_json().into()
     }
 }
