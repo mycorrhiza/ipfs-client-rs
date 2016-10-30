@@ -58,4 +58,12 @@ impl<'a> SwarmClient<'a> {
             .map(Into::into as _)
             .into()
     }
+
+    pub fn disconnect(&self, addr: &MultiAddr) -> future::swarm::ConnectResult {
+        self.0.fetcher
+            .fetch(&self.0.host, ("api", "v0", "swarm", "disconnect"), ("arg", addr.to_string()))
+            .parse_json()
+            .map(Into::into as _)
+            .into()
+    }
 }
