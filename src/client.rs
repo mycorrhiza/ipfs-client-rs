@@ -1,8 +1,9 @@
+use futures::Future;
+use multiaddr::MultiAddr;
 use tokio_core::reactor::Handle;
 use tokio_curl::Session;
-use fetch::Fetcher;
-use multiaddr::MultiAddr;
 
+use fetch::Fetcher;
 use future;
 
 pub struct Client {
@@ -48,5 +49,13 @@ impl<'a> SwarmClient<'a> {
 
     pub fn local_addresses(&self, id: bool) -> future::swarm::Addresses {
         self.0.fetcher.fetch(&self.0.host, ("api", "v0", "swarm", "addrs", "local"), (("id", id))).parse_json().into()
+    }
+
+    pub fn connect(&self, addr: &MultiAddr) -> future::swarm::ConnectResult {
+        self.0.fetcher
+            .fetch(&self.0.host, ("api", "v0", "swarm", "connect"), ("arg", addr.to_string()))
+            .parse_json()
+            .map(Into::into as _)
+            .into()
     }
 }

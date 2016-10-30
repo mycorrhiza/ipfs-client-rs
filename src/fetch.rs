@@ -65,6 +65,12 @@ impl<A> From<(A, bool)> for Param where A: Into<String> {
     }
 }
 
+impl From<(&'static str, String)> for Param {
+    fn from((a, b): (&str, String)) -> Param {
+        Param(Some(format!("{}={}", a, b)))
+    }
+}
+
 impl From<()> for Params {
     fn from(_: ()) -> Params {
         Params(None)

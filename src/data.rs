@@ -53,4 +53,26 @@ pub mod swarm {
         #[serde(deserialize_with = "map_of_vec_from_strs")]
         pub peers: HashMap<String, Vec<MultiAddr>>,
     }
+
+    #[derive(Debug, Deserialize)]
+    pub struct ConnectResultData {
+        #[serde(rename = "Strings")]
+        pub strings: Option<Vec<String>>,
+        #[serde(rename = "Message")]
+        pub message: Option<String>,
+        #[serde(rename = "Code")]
+        pub code: Option<usize>,
+    }
+
+    impl Into<Result<Vec<String>, String>> for ConnectResultData {
+        fn into(self) -> Result<Vec<String>, String> {
+            if let Some(msg) = self.message {
+                return Err(msg);
+            }
+            if let Some(strs) = self.strings {
+                return Ok(strs);
+            }
+            Err("missing error message".to_owned())
+        }
+    }
 }
