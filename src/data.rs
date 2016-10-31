@@ -38,6 +38,7 @@ pub struct Version {
 pub mod swarm {
     use std::collections::HashMap;
 
+    use multihash::MultiHash;
     use multiaddr::MultiAddr;
 
     use deserialize_helpers::{ vec_from_strs, map_of_vec_from_strs };
@@ -53,7 +54,7 @@ pub mod swarm {
     pub struct PeerAddresses {
         #[serde(rename = "Addrs")]
         #[serde(deserialize_with = "map_of_vec_from_strs")]
-        pub peers: HashMap<String, Vec<MultiAddr>>,
+        pub peers: HashMap<MultiHash, Vec<MultiAddr>>,
     }
 
     #[derive(Debug, Deserialize)]
