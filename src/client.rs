@@ -1,5 +1,7 @@
+use base58::ToBase58;
 use futures::Future;
 use multiaddr::MultiAddr;
+use multihash::MultiHash;
 use tokio_core::reactor::Handle;
 use tokio_curl::Session;
 
@@ -29,8 +31,8 @@ impl Client {
         self.fetcher.fetch(&self.host, ("api", "v0", "id"), ()).parse_json().into()
     }
 
-    pub fn peer_info<S: AsRef<str>>(&self, peer: S) -> future::PeerInfo {
-        self.fetcher.fetch(&self.host, ("api", "v0", "id", peer), ()).parse_json().into()
+    pub fn peer_info(&self, peer: &MultiHash) -> future::PeerInfo {
+        self.fetcher.fetch(&self.host, ("api", "v0", "id", peer.to_bytes().to_base58()), ()).parse_json().into()
     }
 
     pub fn swarm(&self) -> SwarmClient {

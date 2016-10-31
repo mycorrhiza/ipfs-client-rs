@@ -4,11 +4,13 @@
 
 #![recursion_limit = "1024"]
 
+extern crate base58;
 extern crate curl;
 #[macro_use]
 extern crate error_chain;
 extern crate futures;
 extern crate multiaddr;
+extern crate multihash;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
