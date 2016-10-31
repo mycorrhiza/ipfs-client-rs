@@ -1,4 +1,3 @@
-use base58::ToBase58;
 use futures::Future;
 use multiaddr::MultiAddr;
 use multihash::MultiHash;
@@ -32,7 +31,7 @@ impl Client {
     }
 
     pub fn peer_info(&self, peer: &MultiHash) -> future::PeerInfo {
-        self.fetcher.fetch(&self.host, ("api", "v0", "id", peer.to_bytes().to_base58()), ()).parse_json().into()
+        self.fetcher.fetch(&self.host, ("api", "v0", "id", peer.to_string()), ()).parse_json().into()
     }
 
     pub fn swarm(&self) -> SwarmClient {

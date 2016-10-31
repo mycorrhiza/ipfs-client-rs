@@ -1,11 +1,13 @@
 use multiaddr::MultiAddr;
+use multihash::MultiHash;
 
-use deserialize_helpers::vec_from_strs;
+use deserialize_helpers::{ from_str, vec_from_strs };
 
 #[derive(Debug, Deserialize)]
 pub struct PeerInfo {
     #[serde(rename = "ID")]
-    pub id: String,
+    #[serde(deserialize_with = "from_str")]
+    pub id: MultiHash,
 
     #[serde(rename = "PublicKey")]
     pub public_key: String,

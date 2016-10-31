@@ -9,7 +9,7 @@ curl = "0.3.8"
 error-chain = "0.5.0"
 futures = "0.1.2"
 multiaddr = { git = "https://github.com/Nemo157/multiaddr-rs" }
-multihash = { git = "https://github.com/Nemo157/multihash-rs" }
+multihash = { git = "https://github.com/Nemo157/multihash-rs", features = ["parse", "display"] }
 serde = "0.8"
 serde_derive = "0.8"
 serde_json = "0.8"

@@ -35,20 +35,20 @@ pub fn vec_from_strs<T, D>(d: &mut D) -> Result<Vec<T>, D::Error>
     Ok(result)
 }
 
-// fn from_str<T, D>(d: &mut D) -> Result<T, D::Error>
-//     where T: FromStr,
-//           <T as FromStr>::Err: StdError,
-//           D: Deserializer
-// {
-//     struct Visitor;
-// 
-//     impl de::Visitor for Visitor {
-//         type Value = String;
-// 
-//         fn visit_str<E: de::Error>(&mut self, value: &str) -> Result<String, E> {
-//             Ok(value.to_owned())
-//         }
-//     }
-// 
-//     Ok(try!(try!(d.deserialize_str(Visitor)).parse().map_err(|e| <D::Error as serde::Error>::custom(<<T as FromStr>::Err as StdError>::description(&e)))))
-// }
+pub fn from_str<T, D>(d: &mut D) -> Result<T, D::Error>
+    where T: FromStr,
+          <T as FromStr>::Err: StdError,
+          D: Deserializer
+{
+    struct Visitor;
+
+    impl de::Visitor for Visitor {
+        type Value = String;
+
+        fn visit_str<E: de::Error>(&mut self, value: &str) -> Result<String, E> {
+            Ok(value.to_owned())
+        }
+    }
+
+    Ok(try!(try!(d.deserialize_str(Visitor)).parse().map_err(|e| <D::Error as serde::Error>::custom(<<T as FromStr>::Err as StdError>::description(&e)))))
+}
