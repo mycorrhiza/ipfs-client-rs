@@ -1,5 +1,5 @@
-use multiaddr::MultiAddr;
-use multihash::MultiHash;
+use maddr::MultiAddr;
+use mhash::MultiHash;
 
 use deserialize_helpers::{ from_str, vec_from_strs };
 
@@ -7,7 +7,7 @@ use deserialize_helpers::{ from_str, vec_from_strs };
 pub struct PeerInfo {
     #[serde(rename = "ID")]
     #[serde(deserialize_with = "from_str")]
-    pub id: MultiHash,
+    pub id: MultiHash<Vec<u8>>,
 
     #[serde(rename = "PublicKey")]
     pub public_key: String,
@@ -38,8 +38,8 @@ pub struct Version {
 pub mod swarm {
     use std::collections::HashMap;
 
-    use multihash::MultiHash;
-    use multiaddr::MultiAddr;
+    use mhash::MultiHash;
+    use maddr::MultiAddr;
 
     use deserialize_helpers::{ vec_from_strs, map_of_vec_from_strs };
 
@@ -54,7 +54,7 @@ pub mod swarm {
     pub struct PeerAddresses {
         #[serde(rename = "Addrs")]
         #[serde(deserialize_with = "map_of_vec_from_strs")]
-        pub peers: HashMap<MultiHash, Vec<MultiAddr>>,
+        pub peers: HashMap<MultiHash<Vec<u8>>, Vec<MultiAddr>>,
     }
 
     #[derive(Debug, Deserialize)]

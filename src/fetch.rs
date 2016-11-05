@@ -5,7 +5,7 @@ use futures::{ self, Future, AndThen, Done, Map, Join, Flatten, MapErr, Finished
 use serde::Deserialize;
 use serde_json::{ self };
 use tokio_curl::{ Perform, Session, PerformError };
-use multiaddr::{ MultiAddr, Segment };
+use maddr::{ MultiAddr, Segment };
 
 use errors::*;
 

@@ -8,8 +8,8 @@ extern crate curl;
 #[macro_use]
 extern crate error_chain;
 extern crate futures;
-extern crate multiaddr;
-extern crate multihash;
+extern crate maddr;
+extern crate mhash;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
