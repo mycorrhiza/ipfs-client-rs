@@ -5,13 +5,16 @@ use tokio_core::reactor::Handle;
 use tokio_curl::Session;
 
 use fetch::Fetcher;
+use data;
 use future;
 
+#[allow(missing_debug_implementations)] // TODO
 pub struct Client {
     fetcher: Fetcher,
     host: MultiAddr,
 }
 
+#[allow(missing_debug_implementations)] // TODO
 pub struct SwarmClient<'a>(&'a Client);
 
 impl Client {
@@ -53,18 +56,20 @@ impl<'a> SwarmClient<'a> {
     }
 
     pub fn connect(&self, addr: &MultiAddr) -> future::swarm::ConnectResult {
+        let into: fn(data::swarm::ConnectResultData) -> Result<Vec<String>, String> = Into::into;
         self.0.fetcher
             .fetch(&self.0.host, ("api", "v0", "swarm", "connect"), ("arg", addr.to_string()))
             .parse_json()
-            .map(Into::into as _)
+            .map(into)
             .into()
     }
 
     pub fn disconnect(&self, addr: &MultiAddr) -> future::swarm::ConnectResult {
+        let into: fn(data::swarm::ConnectResultData) -> Result<Vec<String>, String> = Into::into;
         self.0.fetcher
             .fetch(&self.0.host, ("api", "v0", "swarm", "disconnect"), ("arg", addr.to_string()))
             .parse_json()
-            .map(Into::into as _)
+            .map(into)
             .into()
     }
 }

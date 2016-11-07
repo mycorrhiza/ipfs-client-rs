@@ -1,6 +1,7 @@
 #[macro_export]
 macro_rules! wrapped_future {
     ($item:ty, $wrapper:ident($wrappee:ty)) => {
+        #[allow(missing_debug_implementations)]
         pub struct $wrapper(pub(crate) $wrappee);
 
         impl ::futures::Future for $wrapper {
@@ -20,6 +21,7 @@ macro_rules! wrapped_future {
     };
 
     ($item:ty, $wrapper:ident<$($t:ident:$tt:tt),+>($wrappee:ty)) => {
+        #[allow(missing_debug_implementations)]
         pub struct $wrapper<$($t:$tt),+>(pub(crate) $wrappee);
 
         impl<$($t: $tt),+> ::futures::Future for $wrapper<$($t),+> {

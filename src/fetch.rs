@@ -48,7 +48,7 @@ pub struct Param(Option<String>);
 pub struct Params(Option<String>);
 
 impl Params {
-    fn to_string(self) -> String {
+    fn into_string(self) -> String {
         match self.0 {
             Some(mut s) => {
                 s.insert(0, '?');
@@ -98,20 +98,20 @@ impl Fetcher {
 
     pub fn fetch<P: Into<Path>, A: Into<Params>>(&self, host: &MultiAddr, path: P, params: A) -> FetchFuture {
         fn construct_url(host: &MultiAddr, path: Path, params: Params) -> Result<String> {
-            let base = match host.segments() {
-                &[Segment::IP4(ref addr), Segment::Tcp(port), Segment::Http] =>
-                    format!("http://{}:{}/", addr, port),
-                &[Segment::IP4(ref addr), Segment::Tcp(port), Segment::Https] =>
-                    format!("http://{}:{}/", addr, port),
-                &[Segment::IP6(ref addr), Segment::Tcp(port), Segment::Http] =>
-                    format!("http://{}:{}/", addr, port),
-                &[Segment::IP6(ref addr), Segment::Tcp(port), Segment::Https] =>
+            let base = match *host.segments() {
+                [Segment::IP4(ref addr), Segment::Tcp(port), Segment::Http] =>
+                   format!("http://{}:{}/", addr, port),
+                [Segment::IP4(ref addr), Segment::Tcp(port), Segment::Https] =>
+                   format!("http://{}:{}/", addr, port),
+                [Segment::IP6(ref addr), Segment::Tcp(port), Segment::Http] =>
+                   format!("http://{}:{}/", addr, port),
+                [Segment::IP6(ref addr), Segment::Tcp(port), Segment::Https] =>
                     format!("http://{}:{}/", addr, port),
                 _ => {
                     return Err(Error::from(format!("Cannot fetch from host {}", host)));
                 }
             };
-            Ok(base + &path.0 + &*params.to_string())
+            Ok(base + &path.0 + &*params.into_string())
         }
 
         // We have to use an Arc<Mutex<_>> here because of limitations in the
@@ -144,11 +144,12 @@ impl Fetcher {
                 .expect("If the transferring thread panicked we should not have made it here in the first place")
         }
 
+        let from: fn(PerformError) -> Error = Error::from;
         let buffer = Arc::new(Mutex::new(Vec::with_capacity(128)));
         FetchFuture(
             futures::done(
                 start_fetch(host, path.into(), params.into(), buffer.clone())
-                    .map(|req| self.session.perform(req).map_err(Error::from as _)))
+                    .map(|req| self.session.perform(req).map_err(from)))
             .flatten()
             .join(futures::finished(buffer))
             .map(finish_fetch))

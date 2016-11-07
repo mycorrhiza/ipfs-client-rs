@@ -21,7 +21,9 @@ pub fn map_of_vec_from_strs<K, V, D>(d: &mut D) -> Result<HashMap<K, Vec<V>>, D:
         for v in strs {
             values.push(try!(v.parse().map_err(|e| <D::Error as serde::Error>::custom(<<V as FromStr>::Err as StdError>::description(&e)))));
         }
-        map.insert(key, values);
+        if map.insert(key, values).is_some() {
+            panic!("Can't have duplicate keys");
+        }
     }
     Ok(map)
 }
