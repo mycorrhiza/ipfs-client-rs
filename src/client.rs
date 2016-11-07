@@ -30,7 +30,7 @@ impl Client {
         self.fetcher.fetch(&self.host, ("api", "v0", "id"), ()).parse_json().into()
     }
 
-    pub fn peer_info<D: AsRef<[u8]>>(&self, peer: &MultiHash) -> future::PeerInfo {
+    pub fn peer_info(&self, peer: &MultiHash) -> future::PeerInfo {
         self.fetcher.fetch(&self.host, ("api", "v0", "id", peer.to_string()), ()).parse_json().into()
     }
 
